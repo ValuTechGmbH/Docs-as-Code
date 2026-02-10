@@ -4,5 +4,8 @@ __version__ = "0.1.0"
 
 from pathlib import Path
 
-TEMPLATE_DIR = Path(__file__).resolve().parent.parent
-"""Root directory of the template package (contains mkdocs.yml, docs/, overrides/)."""
+PACKAGE_DIR = Path(__file__).resolve().parent
+"""Directory of the installed valutech_docs_template package."""
+
+TEMPLATE_DIR = PACKAGE_DIR
+"""Alias for PACKAGE_DIR (kept for backwards compatibility)."""

@@ -1,0 +1,69 @@
+# ============================================================
+# ValuTech MkDocs Base Configuration
+# ============================================================
+# This file is the base template for all ValuTech documentation
+# projects. Consumers INHERIT from a generated copy of this file
+# (.valutech-docs-base.yml) that has paths resolved.
+#
+# DO NOT set site_name, docs_dir, nav, extra_css, theme.logo,
+# or theme.favicon here — those belong in the consumer's mkdocs.yml.
+# ============================================================
+
+site_author: "ValuTech GmbH"
+site_description: "Technical documentation powered by the ValuTech docs-as-code template"
+
+# --------------- Theme ---------------
+theme:
+  name: material
+  icon:
+    repo: fontawesome/brands/git-alt
+  palette:
+    - scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.highlight
+    - content.code.copy
+
+# --------------- Markdown Extensions ---------------
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - tables
+  - toc:
+      permalink: true
+
+# --------------- Plugins ---------------
+# Dict syntax so consumers can merge additional plugin settings via INHERIT.
+plugins:
+  search: {}
+
+  # PDF Export — requires WeasyPrint + GTK3/Pango native libs.
+  # Activated via ENABLE_PDF_EXPORT=1 environment variable.
+  with-pdf:
+    author: "ValuTech GmbH"
+    copyright: "ValuTech GmbH. All rights reserved."
+    cover: true
+    cover_title: "Project Documentation"
+    cover_subtitle: "Technical Documentation"
+    custom_template_path: __VALUTECH_PACKAGE_DIR__/overrides/pdf
+    toc_level: 3
+    enabled_if_env: ENABLE_PDF_EXPORT

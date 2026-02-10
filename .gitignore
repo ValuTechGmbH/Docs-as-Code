@@ -3,6 +3,9 @@ site/
 dist/
 build/
 
+# Generated base config
+.valutech-docs-base.yml
+
 # Python
 __pycache__/
 *.py[cod]

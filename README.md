@@ -8,6 +8,7 @@ MkDocs documentation template with Material theme and PDF export, packaged for r
 - **PDF export** via `mkdocs-with-pdf` (optional, env-gated)
 - **Custom PDF styling** — branded cover page, headers, footers
 - **Python package** — installable via `pip` for consuming projects
+- **CLI tool** — `valutech-docs-init` generates the base config with resolved paths
 - **GitHub Actions** — automated package build and publish on tag
 
 ## Quick Start (Standalone)
@@ -32,35 +33,54 @@ Open http://127.0.0.1:8000 to preview.
 
 ## Using in a Consuming Project
 
-### 1. Install the package
+### 1. Create `pyproject.toml`
 
-Add the template as a dependency in your project's `pyproject.toml` or `requirements.txt`:
+Add the template as a dependency in your project's `pyproject.toml`:
 
 ```toml
-# pyproject.toml
 [project]
+name = "my-super-docs"
+dynamic = ["version"]
 dependencies = [
-    "valutech-docs-template @ git+https://github.com/ValuTech/Docs-as-Code.git@v0.1.0",
+    "valutech-docs-template @ git+https://github.com/ValuTechGmbH/Docs-as-Code.git@main",
 ]
 ```
 
-Or install directly:
+### 2. Create a virtual environment and install
+
+(use WSL on Windows)
 
 ```bash
-pip install "valutech-docs-template @ git+https://github.com/ValuTech/Docs-as-Code.git@v0.1.0"
+python -m venv .venv
+source .venv/bin/activate
+pip install -e .
 ```
 
 This pulls in all required MkDocs dependencies (`mkdocs`, `mkdocs-material`, `mkdocs-with-pdf`).
 
-### 2. Create your project documentation
+### 3. Generate the base config
 
-In your project, create a `mkdocs.yml` that inherits from the template or uses it as a starting point:
+```bash
+valutech-docs-init
+```
+
+This creates `.valutech-docs-base.yml` in the current directory with all paths resolved to the installed package location. This file is gitignored and must be regenerated after reinstalling the package.
+
+### 4. Create your `mkdocs.yaml`
 
 ```yaml
 INHERIT: .valutech-docs-base.yml
 
 site_name: "My Project"
 site_description: "Documentation for My Project"
+docs_dir: "content"
+
+theme:
+  logo: assets/images/logo.png
+  favicon: assets/images/favicon.png
+
+extra_css:
+  - stylesheets/extra.css
 
 nav:
   - Home: index.md
@@ -68,11 +88,12 @@ nav:
   - API: api.md
 ```
 
-Or simply copy the `mkdocs.yml`, `docs/`, and `overrides/` directories from this template into your project and customize them.
-
-### 3. Build
+### 5. Build
 
 ```bash
+# Local dev server
+mkdocs serve
+
 # HTML only
 mkdocs build
 
@@ -103,23 +124,25 @@ PDF generation requires **WeasyPrint** native dependencies:
 
 ```
 .
-├── mkdocs.yml                  # MkDocs configuration
-├── pyproject.toml              # Python package definition
-├── docs/                       # Documentation source (Markdown)
+├── mkdocs.yml                          # Standalone dev config (inherits from package)
+├── pyproject.toml                      # Python package definition
+├── docs/                               # Documentation source (Markdown)
 │   ├── index.md
 │   ├── getting-started/
 │   ├── architecture/
 │   ├── api-reference/
 │   ├── guides/
-│   ├── assets/images/          # Logos and images
-│   └── stylesheets/extra.css   # Custom CSS
-├── overrides/pdf/              # PDF cover page and styles
-│   ├── cover.html
-│   └── styles.scss
-├── valutech_docs_template/     # Python package (for pip install)
-│   └── __init__.py
-├── .github/workflows/build.yml # CI/CD pipeline
-└── .vscode/tasks.json          # VS Code build tasks
+│   ├── assets/images/                  # Logos and images
+│   └── stylesheets/extra.css           # Custom CSS
+├── valutech_docs_template/             # Python package (for pip install)
+│   ├── __init__.py
+│   ├── cli.py                          # valutech-docs-init entry point
+│   ├── mkdocs-base.yml                 # Base config template
+│   └── overrides/pdf/                  # PDF cover page and styles
+│       ├── cover.html
+│       └── styles.scss
+├── .github/workflows/build.yml         # CI/CD pipeline
+└── .vscode/tasks.json                  # VS Code build tasks
 ```
 
 ## CI/CD
@@ -158,7 +181,7 @@ Replace the files in `docs/assets/images/`:
 
 ### Modifying the PDF cover
 
-Edit `overrides/pdf/cover.html` for layout and `overrides/pdf/styles.scss` for page headers/footers.
+Edit `valutech_docs_template/overrides/pdf/cover.html` for layout and `valutech_docs_template/overrides/pdf/styles.scss` for page headers/footers.
 
 ## License
 

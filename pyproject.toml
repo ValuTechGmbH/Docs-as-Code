@@ -23,12 +23,14 @@ dev = [
     "build",
 ]
 
+[project.scripts]
+valutech-docs-init = "valutech_docs_template.cli:main"
+
 [tool.setuptools.packages.find]
 include = ["valutech_docs_template*"]
 
 [tool.setuptools.package-data]
 "valutech_docs_template" = [
-    "mkdocs.yml",
-    "docs/**/*",
+    "mkdocs-base.yml",
     "overrides/**/*",
 ]

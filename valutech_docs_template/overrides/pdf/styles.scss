@@ -9,8 +9,8 @@
   padding-bottom: 4mm;
 
   @top-left {
-    // Override this path in consuming projects to point to the correct logo
-    content: url("docs/assets/images/logo-pdf.png");
+    // Path is relative to docs_dir in the consuming project
+    content: url("assets/images/logo-pdf.png");
     vertical-align: bottom;
     padding-bottom: 4px;
   }
