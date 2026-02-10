@@ -1,0 +1,73 @@
+// ── Page header & footer ──
+@page {
+  margin: 30mm 20mm 15mm 20mm;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  // Full-width lines between header/footer and content
+  border-top: 2px solid #1a237e;
+  padding-top: 4mm;
+  border-bottom: 2px solid #1a237e;
+  padding-bottom: 4mm;
+
+  @top-left {
+    // Override this path in consuming projects to point to the correct logo
+    content: url("docs/assets/images/logo-pdf.png");
+    vertical-align: bottom;
+    padding-bottom: 4px;
+  }
+  @top-center {
+    vertical-align: bottom;
+    padding-bottom: 4px;
+  }
+  @top-right {
+    content: string(chapter);
+    font-size: 9pt;
+    color: #333;
+    font-weight: 500;
+    vertical-align: bottom;
+    padding-bottom: 4px;
+  }
+  @bottom-center {
+    content: counter(page) " / " counter(pages);
+    font-size: 9px;
+    color: #888;
+  }
+  @bottom-right {
+    content: string(copyright);
+    font-size: 9px;
+    color: #aaa;
+  }
+}
+
+// No header/footer on cover page
+@page :first {
+  border-top: none;
+  padding-top: 0;
+  border-bottom: none;
+  padding-bottom: 0;
+  @top-left { content: normal; }
+  @top-center { content: normal; }
+  @top-right { content: normal; }
+  @bottom-center { content: normal; }
+  @bottom-right { content: normal; }
+}
+
+// ── Only h1 sets the chapter string (override plugin default) ──
+h1, h2, h3 {
+  string-set: none !important;
+}
+h1 {
+  string-set: chapter content() !important;
+}
+
+// ── Align ordered/unordered lists with paragraph text ──
+.md-typeset > ol {
+  margin-left: 0.7rem !important;
+  padding-left: 0.7rem !important;
+}
+
+// ── Remove all heading borders ──
+article h1,
+article h2,
+article h3 {
+  border-bottom: none !important;
+}

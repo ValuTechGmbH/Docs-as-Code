@@ -1,0 +1,48 @@
+{
+  "version": "2.0.0",
+  "options": {
+    "env": {
+      "PATH": "${workspaceFolder}/.venv/bin:${env:PATH}",
+      "VIRTUAL_ENV": "${workspaceFolder}/.venv"
+    }
+  },
+  "tasks": [
+    {
+      "label": "MkDocs: Build HTML",
+      "type": "shell",
+      "command": "mkdocs build",
+      "group": "build",
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "MkDocs: Build HTML + PDF",
+      "type": "shell",
+      "command": "ENABLE_PDF_EXPORT=1 mkdocs build",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "shared"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "MkDocs: Serve (live preview)",
+      "type": "shell",
+      "command": "mkdocs serve",
+      "group": "none",
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated"
+      },
+      "problemMatcher": []
+    }
+  ]
+}

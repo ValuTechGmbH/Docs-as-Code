@@ -1,0 +1,33 @@
+/* ============================================================
+   Extra styles — logo sizing & PDF print overrides
+   ============================================================ */
+
+/* --- Header logo sizing (web) --- */
+.md-header__button.md-logo img {
+  height: 32px;
+  width: auto;
+}
+
+/* --- Print / PDF overrides --- */
+@media print {
+  /* Hide navigation and search in printed output */
+  .md-sidebar,
+  .md-search,
+  .md-header {
+    display: none !important;
+  }
+
+  /* Ensure code blocks don't overflow */
+  pre, code {
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+  }
+
+  /* Page break control */
+  h1, h2, h3 {
+    page-break-after: avoid;
+  }
+  table, figure, pre {
+    page-break-inside: avoid;
+  }
+}
