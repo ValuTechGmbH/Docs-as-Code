@@ -118,8 +118,39 @@ commenters need a GitHub account but **no access to the private repository**.
 
 ### 1. Create the GitHub App
 
-In the organisation that owns the docs repository, **Settings → Developer
-settings → GitHub Apps → New GitHub App**:
+There is no API that creates a GitHub App, but the bundled command drives
+GitHub's manifest flow, which comes within one click of it — and hands back the
+private key instead of making you download a `.pem`:
+
+```bash
+valutech-docs-github-app \
+    --org geobrugg-sentra \
+    --repo sentra-system-docs \
+    --site-url https://docs.example.com
+```
+
+It opens a page that posts a prepared manifest (name, `Issues: write`, no
+webhooks, not public) to GitHub. Press **Create GitHub App**, and the command
+catches the redirect, exchanges the code, then opens the install page and waits
+for you to install the App on the docs repository. It ends with:
+
+```
+App ID          123456
+Installation ID 78901234
+Private key     ./<slug>.private-key.pem          (0600)
+Azure settings  ./set-swa-appsettings-<slug>.sh   (0700)
+```
+
+Requirements: you must be an **owner/admin of the organisation**, and `openssl`
+must be on PATH (it signs the App JWT used to read the installation id).
+Interrupted after the App was created? Resume the lookup with
+`valutech-docs-github-app --app-id <id> --pem <path>`. Delete both generated
+files once the settings are in place — they contain the private key.
+
+<details>
+<summary>Doing it by hand instead</summary>
+
+Organisation **Settings → Developer settings → GitHub Apps → New GitHub App**:
 
 | Field | Value |
 |-------|-------|
@@ -129,15 +160,17 @@ settings → GitHub Apps → New GitHub App**:
 | Repository permissions | **Issues: Read and write** |
 | Installation | Only on this account → install on the docs repository |
 
-Then note the **App ID**, generate a **private key** (`.pem` download), and take
-the **installation ID** from the URL of
-*Settings → GitHub Apps → your app → Configure*
-(`.../installations/<installation-id>`).
+Note the **App ID**, generate and download a **private key**, and take the
+**installation ID** from the URL of *Settings → GitHub Apps → your app →
+Configure* (`.../installations/<installation-id>`).
+
+</details>
 
 ### 2. Configure the Static Web App
 
-Add these under **Configuration → Application settings** (Azure Portal), or with
-`az staticwebapp appsettings set`:
+Run the `set-swa-appsettings-<slug>.sh` written by the previous step
+(`SWA_NAME=<static-web-app> ./set-swa-appsettings-<slug>.sh`), or set these by
+hand under **Configuration → Application settings** in the Azure Portal:
 
 | Setting | Value |
 |---------|-------|
@@ -243,6 +276,7 @@ PDF generation requires **WeasyPrint** native dependencies:
 ├── valutech_docs_template/             # Python package (for pip install)
 │   ├── __init__.py
 │   ├── cli.py                          # valutech-docs-init entry point
+│   ├── github_app.py                   # valutech-docs-github-app entry point
 │   ├── mkdocs-base.yml                 # Base config template
 │   ├── plugins/comments.py             # Page comments MkDocs plugin
 │   ├── web/assets/valutech/            # Comment widget CSS + JS

@@ -27,3 +27,7 @@ env/
 # OS
 .DS_Store
 Thumbs.db
+
+# Secrets emitted by valutech-docs-github-app
+*.private-key.pem
+set-swa-appsettings-*.sh
