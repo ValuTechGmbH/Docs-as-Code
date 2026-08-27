@@ -1,0 +1,9 @@
+{
+  "name": "valutech-docs-comments-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Static Web Apps managed function backing the docs comment widget. Intentionally dependency-free: Node 20 provides fetch and crypto.",
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -56,6 +56,16 @@ markdown_extensions:
 plugins:
   search: {}
 
+  # Page comments — opt-in, because it needs the API deployed alongside the site.
+  # Enable it in the consuming project's mkdocs.yaml:
+  #
+  #   plugins:
+  #     valutech-comments:
+  #       api_base: /api/comments
+  #
+  # See "Page comments" in the template README for the Static Web Apps and
+  # GitHub App setup.
+
   # PDF Export — requires WeasyPrint + GTK3/Pango native libs.
   # Activated via ENABLE_PDF_EXPORT=1 environment variable.
   with-pdf:

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "valutech-docs-template"
-version = "0.1.0"
+version = "0.2.0"
 description = "ValuTech MkDocs documentation template with Material theme and PDF export"
 readme = "README.md"
 license = "MIT"
@@ -27,6 +27,9 @@ dev = [
 [project.scripts]
 valutech-docs-init = "valutech_docs_template.cli:main"
 
+[project.entry-points."mkdocs.plugins"]
+valutech-comments = "valutech_docs_template.plugins.comments:CommentsPlugin"
+
 [tool.setuptools.packages.find]
 include = ["valutech_docs_template*"]
 
@@ -34,4 +37,7 @@ include = ["valutech_docs_template*"]
 "valutech_docs_template" = [
     "mkdocs-base.yml",
     "overrides/**/*",
+    "web/**/*",
+    "api/**/*",
+    "api/**/.*",
 ]

@@ -1,0 +1,211 @@
+/* Page comments widget — themed with Material for MkDocs CSS variables so it
+   follows the palette and the light/dark toggle without extra configuration. */
+
+.vt-comments {
+  margin: 3rem 0 1rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--md-default-fg-color--lightest);
+  font-size: 0.8rem;
+}
+
+.vt-comments[hidden] {
+  display: none;
+}
+
+.vt-comments__title {
+  margin: 0 0 0.4rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.vt-comments__intro {
+  margin: 0 0 1.2rem;
+  color: var(--md-default-fg-color--light);
+}
+
+/* -- comment list -------------------------------------------------------- */
+
+.vt-comments__list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+  margin-bottom: 1.5rem;
+}
+
+.vt-comments__empty {
+  margin: 0 0 1.5rem;
+  color: var(--md-default-fg-color--light);
+  font-style: italic;
+}
+
+.vt-comment {
+  padding: 0.8rem 1rem;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.2rem;
+  background: var(--md-code-bg-color);
+}
+
+.vt-comment__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.vt-comment__state {
+  padding: 0.05rem 0.45rem;
+  border-radius: 1rem;
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--md-primary-bg-color);
+  background: var(--md-default-fg-color--light);
+}
+
+.vt-comment__state--open {
+  background: #1a7f37;
+  color: #fff;
+}
+
+.vt-comment__state--resolved {
+  background: #8250df;
+  color: #fff;
+}
+
+.vt-comment__state--declined {
+  background: var(--md-default-fg-color--light);
+}
+
+.vt-comment__author {
+  font-weight: 700;
+}
+
+.vt-comment__kind,
+.vt-comment__section {
+  padding: 0.05rem 0.4rem;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-radius: 0.2rem;
+  color: var(--md-default-fg-color--light);
+  font-size: 0.68rem;
+}
+
+.vt-comment__date {
+  margin-left: auto;
+  color: var(--md-default-fg-color--light);
+  font-size: 0.68rem;
+}
+
+.vt-comment__text {
+  margin: 0 0 0.5rem;
+  white-space: pre-wrap;
+}
+
+.vt-comment__footer {
+  color: var(--md-default-fg-color--light);
+  font-size: 0.68rem;
+}
+
+/* -- form ---------------------------------------------------------------- */
+
+.vt-comments__form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.vt-comments__row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+}
+
+.vt-comments__field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+/* Only inside the horizontal row is flex-basis a width. On the form itself
+   (a flex column) it would become a height and stretch the field. */
+.vt-comments__row .vt-comments__field {
+  flex: 1 1 12rem;
+}
+
+.vt-comments__label {
+  color: var(--md-default-fg-color--light);
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.vt-comments__form select,
+.vt-comments__form textarea {
+  width: 100%;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--md-default-fg-color--lighter);
+  border-radius: 0.2rem;
+  background: var(--md-default-bg-color);
+  color: var(--md-default-fg-color);
+  font-family: inherit;
+  font-size: 0.75rem;
+}
+
+.vt-comments__form textarea {
+  min-height: 6rem;
+  resize: vertical;
+}
+
+.vt-comments__form select:focus,
+.vt-comments__form textarea:focus {
+  border-color: var(--md-accent-fg-color);
+  outline: none;
+}
+
+.vt-comments__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.vt-comments__submit {
+  padding: 0.4rem 1rem;
+  border: none;
+  border-radius: 0.2rem;
+  background: var(--md-primary-fg-color);
+  color: var(--md-primary-bg-color);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.vt-comments__submit:hover:not(:disabled) {
+  background: var(--md-accent-fg-color);
+}
+
+.vt-comments__submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.vt-comments__note {
+  color: var(--md-default-fg-color--light);
+  font-size: 0.68rem;
+}
+
+.vt-comments__status {
+  margin: 0;
+  font-size: 0.7rem;
+}
+
+.vt-comments__status--error {
+  color: #d32f2f;
+}
+
+.vt-comments__status--ok {
+  color: #1a7f37;
+}

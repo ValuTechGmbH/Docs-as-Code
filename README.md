@@ -5,6 +5,7 @@ MkDocs documentation template with Material theme and PDF export, packaged for r
 ## Features
 
 - **Material for MkDocs** theme with light/dark mode
+- **Page comments** — readers comment on a page, each comment opens a GitHub issue
 - **PDF export** via `mkdocs-with-pdf` (optional, env-gated)
 - **Custom PDF styling** — branded cover page, headers, footers
 - **Python package** — installable via `pip` for consuming projects
@@ -101,6 +102,111 @@ mkdocs build
 ENABLE_PDF_EXPORT=1 mkdocs build
 ```
 
+## Page Comments
+
+Readers can comment on any page; every comment opens one GitHub issue in the
+documentation repository, and the page shows the existing comments with their
+state. Closing the issue is what marks a comment as handled — *Close as
+completed* renders as **Resolved**, *close as not planned* as **Won't do**.
+
+It is built for a site hosted on **Azure Static Web Apps with authentication**,
+which is what makes it usable for private documentation: the GitHub-issue
+comment widgets (utterances, giscus) all require a public repository, this does
+not. The issues are opened by a GitHub App; the commenter's GitHub handle comes
+from the Static Web Apps session and is recorded in the issue body, so
+commenters need a GitHub account but **no access to the private repository**.
+
+### 1. Create the GitHub App
+
+In the organisation that owns the docs repository, **Settings → Developer
+settings → GitHub Apps → New GitHub App**:
+
+| Field | Value |
+|-------|-------|
+| Name | e.g. `<project>-docs-comments` (shows as the issue author) |
+| Homepage URL | the documentation site URL |
+| Webhook | uncheck **Active** |
+| Repository permissions | **Issues: Read and write** |
+| Installation | Only on this account → install on the docs repository |
+
+Then note the **App ID**, generate a **private key** (`.pem` download), and take
+the **installation ID** from the URL of
+*Settings → GitHub Apps → your app → Configure*
+(`.../installations/<installation-id>`).
+
+### 2. Configure the Static Web App
+
+Add these under **Configuration → Application settings** (Azure Portal), or with
+`az staticwebapp appsettings set`:
+
+| Setting | Value |
+|---------|-------|
+| `GITHUB_APP_ID` | numeric App ID |
+| `GITHUB_APP_INSTALLATION_ID` | numeric installation ID |
+| `GITHUB_APP_PRIVATE_KEY` | contents of the `.pem` (newlines may be written as `\n`) |
+| `GITHUB_REPO` | `owner/name` of the docs repository |
+| `DOCS_SITE_URL` | site root, used for the page link in the issue (optional) |
+| `GITHUB_COMMENT_LABEL` | label applied to comment issues (optional, default `docs-comment`) |
+
+Restrict the API to signed-in readers in `staticwebapp.config.json`, and pin the
+runtime:
+
+```json
+{
+  "routes": [
+    { "route": "/api/*", "allowedRoles": ["reader"] }
+  ],
+  "platform": { "apiRuntime": "node:20" }
+}
+```
+
+### 3. Enable it in the project
+
+`mkdocs.yaml`:
+
+```yaml
+site_url: https://docs.example.com   # canonical URLs; the issue's page link uses DOCS_SITE_URL
+
+plugins:
+  valutech-comments:
+    api_base: /api/comments
+```
+
+Deploy workflow — generate the API next to the base config and point Static Web
+Apps at it:
+
+```yaml
+- name: Generate base MkDocs config and comment API
+  run: valutech-docs-init --with-api
+
+# ...
+- uses: Azure/static-web-apps-deploy@v1
+  with:
+    app_location: "site"
+    api_location: "api"
+    skip_app_build: true
+    skip_api_build: true   # the function has no dependencies to build
+```
+
+`api/` is generated, so add it to `.gitignore` alongside
+`.valutech-docs-base.yml`.
+
+### Options
+
+| Plugin option | Default | Purpose |
+|---------------|---------|---------|
+| `enabled` | `true` | Master switch |
+| `api_base` | `/api/comments` | Endpoint the widget talks to |
+| `title` | `Comments` | Heading above the widget |
+| `intro` | *(see plugin)* | Sentence below the heading |
+| `kinds` | `Unclear, Incorrect, Missing, Typo, Suggestion` | Choices in the *Kind* dropdown; empty list hides it |
+
+Per page, `comments: false` in the front matter opts a page out. The widget is
+skipped automatically during `ENABLE_PDF_EXPORT` builds, and hides itself when
+the API is unreachable — so a plain `mkdocs serve` shows the site without it.
+
+Run the API's unit checks with `node tests/comments-api.smoke.js`.
+
 ## Build Commands
 
 | Command | Description |
@@ -138,6 +244,9 @@ PDF generation requires **WeasyPrint** native dependencies:
 │   ├── __init__.py
 │   ├── cli.py                          # valutech-docs-init entry point
 │   ├── mkdocs-base.yml                 # Base config template
+│   ├── plugins/comments.py             # Page comments MkDocs plugin
+│   ├── web/assets/valutech/            # Comment widget CSS + JS
+│   ├── api/                            # Comment API (Static Web Apps function)
 │   └── overrides/pdf/                  # PDF cover page and styles
 │       ├── cover.html
 │       └── styles.scss
