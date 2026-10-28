@@ -1,0 +1,196 @@
+// ── Risk register (valutech-risks plugin) ──
+// Print counterpart of web/assets/valutech/risks.css. Level colours are inline
+// in the HTML; everything else is styled here. with-pdf shifts heading levels
+// of nested pages, so selectors use the plugin's classes, never h2/h3.
+
+$risk-muted: #666;
+$risk-rule: #ddd;
+
+%risk-badge {
+  display: inline-block;
+  padding: 0 4px;
+  border-radius: 6px;
+  font-size: 7pt;
+  font-weight: 700;
+  line-height: 1.5;
+  white-space: nowrap;
+}
+
+.vt-risk-level,
+.vt-risk-status,
+.vt-risk-mitigation,
+.vt-risk-issue-state,
+.vt-risk-stale,
+.vt-risk-ref,
+.vt-risk-chip {
+  @extend %risk-badge;
+}
+
+.vt-risk-status,
+.vt-risk-mitigation,
+.vt-risk-issue-state {
+  color: #333;
+  background: #eee;
+}
+
+.vt-risk-status--open { background: #0969da; color: #fff; }
+.vt-risk-status--mitigating { background: #8250df; color: #fff; }
+.vt-risk-status--occurred { background: #b42318; color: #fff; }
+.vt-risk-mitigation--in-progress { background: #8250df; color: #fff; }
+.vt-risk-mitigation--done { background: #1a7f37; color: #fff; }
+.vt-risk-mitigation--dropped { text-decoration: line-through; }
+.vt-risk-issue-state--open { background: #1a7f37; color: #fff; }
+.vt-risk-issue-state--completed { background: #8250df; color: #fff; }
+.vt-risk-stale { margin-left: 3px; color: #fff; background: #bc4c00; }
+
+a .vt-risk-ref,
+a.vt-risk-chip {
+  text-decoration: none;
+}
+
+// Overview: summary, matrices and register stay together; the risks written
+// out start on a fresh page, one category after another.
+.vt-risk-summary .vt-risk-level {
+  margin-right: 4px;
+}
+
+.vt-risk-summary__total {
+  margin-right: 6px;
+  font-weight: 700;
+}
+
+.vt-risk-summary__closed,
+.vt-risk-summary__stale {
+  color: $risk-muted;
+  font-size: 8pt;
+}
+
+.vt-risk-matrices {
+  margin: 8px 0 12px;
+}
+
+.vt-risk-matrix {
+  display: inline-block;
+  margin: 0 24px 8px 0;
+  vertical-align: top;
+  page-break-inside: avoid;
+
+  figcaption {
+    margin-bottom: 3px;
+    font-size: 9pt;
+    font-weight: 700;
+  }
+
+  table {
+    border-collapse: separate;
+    border-spacing: 2px;
+    font-size: 7pt;
+  }
+
+  th {
+    padding: 1px 4px;
+    color: $risk-muted;
+    font-weight: 600;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  th[scope="row"] {
+    text-align: right;
+  }
+}
+
+.vt-risk-matrix__count {
+  color: $risk-muted;
+  font-weight: 400;
+}
+
+.vt-risk-matrix__axis {
+  font-style: italic;
+}
+
+.vt-risk-matrix__cell {
+  width: 62px;
+  height: 34px;
+  padding: 2px;
+  text-align: center;
+  vertical-align: middle;
+
+  .vt-risk-chip {
+    margin: 1px;
+  }
+}
+
+.vt-risk-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 8pt;
+
+  th,
+  td {
+    padding: 3px 5px;
+    border-bottom: 1px solid $risk-rule;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  th {
+    border-bottom: 1.5px solid #999;
+    white-space: nowrap;
+  }
+
+  // with-pdf keeps every table on one page; a long register has to break.
+  page-break-before: auto;
+  page-break-inside: auto;
+
+  tr {
+    page-break-inside: avoid;
+  }
+
+  thead {
+    display: table-header-group; // repeat the header on every page
+  }
+}
+
+.vt-risk-table__id {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.vt-risk-category {
+  page-break-before: always;
+}
+
+.vt-risk-heading {
+  margin-top: 16px;
+  padding-top: 6px;
+  border-top: 1px solid $risk-rule;
+  page-break-after: avoid;
+}
+
+.vt-risk-facts {
+  margin: 4px 0 8px;
+  border-collapse: collapse;
+  background: #f5f5f5;
+  font-size: 8pt;
+
+  th,
+  td {
+    padding: 1px 14px 1px 6px;
+    text-align: left;
+    vertical-align: top;
+  }
+
+  th {
+    padding-top: 4px;
+    color: $risk-muted;
+    font-size: 6.5pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  td {
+    padding-bottom: 4px;
+  }
+}

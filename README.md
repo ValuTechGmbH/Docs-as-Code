@@ -6,6 +6,7 @@ MkDocs documentation template with Material theme and PDF export, packaged for r
 
 - **Material for MkDocs** theme with light/dark mode
 - **Page comments** — readers comment on a page, each comment opens a GitHub issue
+- **Risk register** — one Markdown file per risk, rendered as matrix, filterable register and PDF chapter
 - **PDF export** via `mkdocs-with-pdf` (optional, env-gated)
 - **Custom PDF styling** — branded cover page, headers, footers
 - **Python package** — installable via `pip` for consuming projects
@@ -240,6 +241,141 @@ the API is unreachable — so a plain `mkdocs serve` shows the site without it.
 
 Run the API's unit checks with `node tests/comments-api.smoke.js`.
 
+## Risk Register
+
+A risk register kept as one Markdown file per risk. The plugin renders it into
+one page: a summary, a risk matrix (current and, where rated, after
+mitigation), a filterable and sortable register table, and then every risk
+written out with its mitigations and linked issues. Everything is static HTML,
+so the PDF gets the same overview and details; the browser only adds the
+filters (search, category, status, owner, level, click a matrix cell), whose
+state is kept in the URL.
+
+### Risk files
+
+Risks live **outside** `docs_dir` — by default in `risks/` next to
+`mkdocs.yaml` — so MkDocs does not treat them as pages. File names are free;
+the `id` in the front matter is what counts and must be unique.
+
+```markdown
+---
+id: T2
+title: Energy budget does not close
+category: technical          # a key from `categories`
+status: mitigating           # open | mitigating | accepted | occurred | closed
+owner: Jane Doe              # optional
+probability: high            # label from the scale, or its 1-based number
+impact: high
+residual:                    # optional: expected rating after the mitigations
+  probability: medium
+  impact: high
+reviewed: 2026-10-20         # optional: last review, drives the "overdue" badge
+mitigations:
+  - text: Measure per-phase energy as soon as mesh and uplink integrate.
+    status: in-progress      # planned (default) | in-progress | done | dropped
+    issue: geobrugg-sentra/mainboard-firmware#42
+  - Publish the budget.      # a plain string is a planned mitigation
+issues: ["#17"]              # risk-level issues; quote `#n`, YAML reads # as a comment
+---
+Description and reasoning, in Markdown.
+```
+
+The risk **level is computed** from probability × impact and the configured
+`levels` — it is never written in the file, so it cannot drift from the scores.
+
+Write links in a risk body as if it were in the register page, e.g.
+`[Battery & Power](../03-hardware/06-battery-and-power.md)` when the register is
+`08-project/02-risks.md`; MkDocs validates them like any other link. Don't use
+`#`/`##`/`###` headings in a risk body — the register uses them.
+
+Issue references take `owner/repo#12`, a GitHub issue URL, or `#12` / `12` for
+the default repository (`issues.repo`).
+
+### Enable it
+
+Put the marker where the register belongs:
+
+```markdown
+# Risks
+
+Intro text.
+
+<!-- valutech:risk-register -->
+```
+
+and enable the plugin in `mkdocs.yaml`:
+
+```yaml
+plugins:
+  valutech-risks:
+    dir: risks
+    categories:
+      technical:
+        title: Technical
+        description: Risks in what is being built.
+      product: Product and process      # title only
+    review_days: 90
+    issues:
+      repo: owner/docs-repo
+      token_env: RISKS_GITHUB_TOKEN
+```
+
+Anywhere in the docs, `[[T2]]` becomes a coloured badge linking to risk T2,
+and the risk lists the pages that reference it. References inside code are left
+alone; an unknown ID is a build warning.
+
+### Issue state
+
+With a GitHub token in the environment variable named by `issues.token_env`,
+the build reads each linked issue and shows its state next to the link (Open /
+Done / Won't do / Closed). Without a token — or when an issue cannot be read —
+the issues are plain links and the build carries on. For issues in other
+repositories than the docs repository, the token needs read access to them
+(a fine-grained PAT or GitHub App token with *Issues: read*); the workflow's
+default `GITHUB_TOKEN` only covers its own repository.
+
+```yaml
+- name: Build documentation
+  run: mkdocs build --clean
+  env:
+    RISKS_GITHUB_TOKEN: ${{ secrets.RISKS_GITHUB_TOKEN }}   # optional
+```
+
+### Options
+
+| Plugin option | Default | Purpose |
+|---------------|---------|---------|
+| `enabled` | `true` | Master switch |
+| `dir` | `risks` | Risk files, relative to `mkdocs.yaml` |
+| `marker` | `<!-- valutech:risk-register -->` | Where the register is inserted |
+| `probability` | `[low, medium, high]` | Probability scale, lowest first |
+| `impact` | `[low, medium, high]` | Impact scale, lowest first |
+| `levels` | Low ≤ 2, Medium ≤ 4, High | `{name, max, color}` list by ascending `max` (score = probability × impact, 1-based); the last may omit `max` |
+| `categories` | *(from the risks)* | Key → title, or → `{title, description}`; sets the order of sections |
+| `review_days` | `0` (off) | Mark risks whose `reviewed` date is older as overdue |
+| `issues.repo` | from `repo_url` | Repository for `#12` references |
+| `issues.token_env` | `GITHUB_TOKEN` | Environment variable holding the token |
+| `issues.lookup` | `true` | Set `false` to never query GitHub |
+| `export_json` | `true` | Write `risks.json` (all risks, computed levels, issue states) to the site root |
+
+A 5×5 scale, for example:
+
+```yaml
+    probability: [rare, unlikely, possible, likely, almost certain]
+    impact: [negligible, minor, moderate, major, severe]
+    levels:
+      - { name: Low, max: 4, color: "#2e7d32" }
+      - { name: Medium, max: 9, color: "#f9a825" }
+      - { name: High, max: 16, color: "#ef6c00" }
+      - { name: Critical, color: "#c62828" }
+```
+
+Problems in a risk file (unknown scale value, duplicate id, bad issue
+reference, …) are build warnings naming the file, and that risk is left out —
+run `mkdocs build --strict` in CI to fail on them.
+
+Run the plugin tests with `python -m unittest tests/test_risks.py`.
+
 ## Build Commands
 
 | Command | Description |
@@ -279,7 +415,8 @@ PDF generation requires **WeasyPrint** native dependencies:
 │   ├── github_app.py                   # valutech-docs-github-app entry point
 │   ├── mkdocs-base.yml                 # Base config template
 │   ├── plugins/comments.py             # Page comments MkDocs plugin
-│   ├── web/assets/valutech/            # Comment widget CSS + JS
+│   ├── plugins/risks/                  # Risk register MkDocs plugin
+│   ├── web/assets/valutech/            # Comment widget and risk register CSS + JS
 │   ├── api/                            # Comment API (Static Web Apps function)
 │   └── overrides/pdf/                  # PDF cover page and styles
 │       ├── cover.html

@@ -1,0 +1,310 @@
+/* Risk register — themed with Material for MkDocs CSS variables so it follows
+   the palette and the light/dark toggle. Level colours come inline from the
+   plugin configuration; the PDF counterpart is overrides/pdf/_risks.scss. */
+
+/* -- badges -------------------------------------------------------------- */
+
+.vt-risk-level,
+.vt-risk-status,
+.vt-risk-mitigation,
+.vt-risk-issue-state,
+.vt-risk-stale,
+.vt-risk-ref,
+.vt-risk-chip {
+  display: inline-block;
+  padding: 0.05rem 0.45rem;
+  border-radius: 1rem;
+  font-size: 0.64rem;
+  font-weight: 700;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+  vertical-align: baseline;
+}
+
+.vt-risk-status,
+.vt-risk-mitigation,
+.vt-risk-issue-state {
+  color: var(--md-default-fg-color);
+  background: var(--md-default-fg-color--lightest);
+}
+
+.vt-risk-status--open { background: #0969da; color: #fff; }
+.vt-risk-status--mitigating { background: #8250df; color: #fff; }
+.vt-risk-status--occurred { background: #b42318; color: #fff; }
+.vt-risk-status--closed { color: var(--md-default-fg-color--light); }
+
+.vt-risk-mitigation--in-progress { background: #8250df; color: #fff; }
+.vt-risk-mitigation--done { background: #1a7f37; color: #fff; }
+.vt-risk-mitigation--dropped { color: var(--md-default-fg-color--light); text-decoration: line-through; }
+
+.vt-risk-issue-state--open { background: #1a7f37; color: #fff; }
+.vt-risk-issue-state--completed { background: #8250df; color: #fff; }
+
+.vt-risk-stale {
+  margin-left: 0.25rem;
+  color: #fff;
+  background: #bc4c00;
+}
+
+.md-typeset a .vt-risk-ref {
+  padding: 0 0.4rem;
+  font-size: 0.7em;
+}
+
+/* -- summary ------------------------------------------------------------- */
+
+.vt-risk-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.vt-risk-summary__total {
+  margin-right: 0.3rem;
+  font-weight: 700;
+}
+
+.vt-risk-summary__closed,
+.vt-risk-summary__stale {
+  font-size: 0.7rem;
+  color: var(--md-default-fg-color--light);
+}
+
+/* -- matrix -------------------------------------------------------------- */
+
+.vt-risk-matrices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2.5rem;
+  margin: 1.2rem 0;
+}
+
+.md-typeset .vt-risk-matrix {
+  margin: 0;
+}
+
+.md-typeset .vt-risk-matrix figcaption {
+  max-width: none;
+  margin: 0 0 0.4rem;
+  font-weight: 700;
+  text-align: left;
+}
+
+.vt-risk-matrix__count {
+  font-weight: 400;
+  color: var(--md-default-fg-color--light);
+}
+
+.md-typeset .vt-risk-matrix table {
+  display: table;
+  border: 0;
+  border-collapse: separate;
+  border-spacing: 3px;
+  font-size: 0.65rem;
+}
+
+.md-typeset .vt-risk-matrix td,
+.md-typeset .vt-risk-matrix th {
+  border: 0;
+}
+
+.md-typeset .vt-risk-matrix th {
+  padding: 0.2rem 0.5rem;
+  font-weight: 600;
+  text-align: center;
+  white-space: nowrap;
+  color: var(--md-default-fg-color--light);
+}
+
+.md-typeset .vt-risk-matrix th[scope="row"] {
+  text-align: right;
+}
+
+.vt-risk-matrix__axis {
+  font-style: italic;
+}
+
+.md-typeset .vt-risk-matrix__cell {
+  width: 6.5rem;
+  height: 3.6rem;
+  padding: 0.3rem;
+  border-radius: 0.2rem;
+  text-align: center;
+  vertical-align: middle;
+  cursor: pointer;
+  transition: box-shadow 0.15s;
+}
+
+.vt-risk-matrix__cell:hover,
+.vt-risk-matrix__cell--active {
+  box-shadow: inset 0 0 0 2px var(--md-accent-fg-color);
+}
+
+.md-typeset a.vt-risk-chip {
+  margin: 0.1rem;
+  text-decoration: none;
+}
+
+.md-typeset a.vt-risk-chip:hover {
+  filter: brightness(1.12);
+}
+
+/* -- register table ------------------------------------------------------ */
+
+.vt-risk-register {
+  overflow-x: auto;
+  scroll-margin-top: 4rem; /* clear the sticky header when a matrix cell scrolls here */
+}
+
+.vt-risk-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1rem 0 0.6rem;
+  font-size: 0.7rem;
+}
+
+.vt-risk-toolbar [hidden] {
+  display: none;
+}
+
+.vt-risk-toolbar input,
+.vt-risk-toolbar select {
+  padding: 0.25rem 0.45rem;
+  border: 1px solid var(--md-default-fg-color--lighter);
+  border-radius: 0.2rem;
+  font: inherit;
+  color: var(--md-default-fg-color);
+  background: var(--md-default-bg-color);
+}
+
+.vt-risk-toolbar input {
+  min-width: 11rem;
+}
+
+.vt-risk-toolbar__levels {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.vt-risk-toolbar__levels .vt-risk-level {
+  border: 0;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  opacity: 0.35;
+}
+
+.vt-risk-toolbar__levels .vt-risk-level[aria-pressed="true"] {
+  opacity: 1;
+}
+
+.vt-risk-toolbar__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--md-accent-fg-color);
+  border-radius: 1rem;
+  background: none;
+  color: var(--md-default-fg-color);
+  font: inherit;
+  cursor: pointer;
+}
+
+.vt-risk-toolbar__count {
+  margin-left: auto;
+  color: var(--md-default-fg-color--light);
+}
+
+.vt-risk-toolbar__reset {
+  border: 0;
+  background: none;
+  color: var(--md-typeset-a-color);
+  font: inherit;
+  cursor: pointer;
+}
+
+.md-typeset .vt-risk-table {
+  display: table;
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.7rem;
+}
+
+.md-typeset .vt-risk-table th,
+.md-typeset .vt-risk-table td {
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--md-default-fg-color--lightest);
+  text-align: left;
+  vertical-align: top;
+}
+
+.md-typeset .vt-risk-table th {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.vt-risk-table th[data-sort] {
+  cursor: pointer;
+  user-select: none;
+}
+
+.vt-risk-table th[aria-sort="ascending"]::after { content: " ▲"; font-size: 0.6em; }
+.vt-risk-table th[aria-sort="descending"]::after { content: " ▼"; font-size: 0.6em; }
+
+.vt-risk-table tbody tr:hover {
+  background: var(--md-code-bg-color);
+}
+
+.vt-risk-table__id {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.vt-risk-table tr[data-status="closed"] {
+  opacity: 0.6;
+}
+
+/* -- details ------------------------------------------------------------- */
+
+.md-typeset .vt-risk-heading {
+  margin-top: 2.2rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid var(--md-default-fg-color--lightest);
+}
+
+.md-typeset .vt-risk-facts {
+  display: table;
+  margin: 0.6rem 0 1rem;
+  border: 0;
+  border-radius: 0.2rem;
+  border-collapse: collapse;
+  background: var(--md-code-bg-color);
+  font-size: 0.7rem;
+}
+
+.md-typeset .vt-risk-facts th,
+.md-typeset .vt-risk-facts td {
+  padding: 0.15rem 1.2rem 0.15rem 0.8rem;
+  border: 0;
+  text-align: left;
+  vertical-align: top;
+}
+
+.md-typeset .vt-risk-facts th {
+  padding-top: 0.5rem;
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--md-default-fg-color--light);
+}
+
+.md-typeset .vt-risk-facts td {
+  padding-bottom: 0.5rem;
+}
