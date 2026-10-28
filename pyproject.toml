@@ -31,6 +31,7 @@ valutech-docs-github-app = "valutech_docs_template.github_app:main"
 [project.entry-points."mkdocs.plugins"]
 valutech-comments = "valutech_docs_template.plugins.comments:CommentsPlugin"
 valutech-risks = "valutech_docs_template.plugins.risks:RisksPlugin"
+valutech-layout = "valutech_docs_template.plugins.layout:LayoutPlugin"
 
 [tool.setuptools.packages.find]
 include = ["valutech_docs_template*"]

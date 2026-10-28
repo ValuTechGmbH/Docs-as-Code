@@ -56,6 +56,16 @@ markdown_extensions:
 plugins:
   search: {}
 
+  # Wider layout on large screens (Material caps it at 1220 px). Tune or revert
+  # in the consuming project's mkdocs.yaml:
+  #
+  #   plugins:
+  #     valutech-layout:
+  #       width: default      # default | wide | full
+  #
+  valutech-layout:
+    width: wide
+
   # Page comments — opt-in, because it needs the API deployed alongside the site.
   # Enable it in the consuming project's mkdocs.yaml:
   #

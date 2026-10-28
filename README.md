@@ -6,6 +6,7 @@ MkDocs documentation template with Material theme and PDF export, packaged for r
 
 - **Material for MkDocs** theme with light/dark mode
 - **Page comments** — readers comment on a page, each comment opens a GitHub issue
+- **Wider layout** — uses more of large screens than Material's 1220 px default
 - **Risk register** — one Markdown file per risk, rendered as matrix, filterable register and PDF chapter
 - **PDF export** via `mkdocs-with-pdf` (optional, env-gated)
 - **Custom PDF styling** — branded cover page, headers, footers
@@ -241,6 +242,25 @@ the API is unreachable — so a plain `mkdocs serve` shows the site without it.
 
 Run the API's unit checks with `node tests/comments-api.smoke.js`.
 
+## Page Width
+
+Material for MkDocs caps the whole layout at 1220 px, leaving most of a large
+monitor empty. The `valutech-layout` plugin, enabled in the base config, raises
+that cap to `80rem` — about 1760 px on a 1920 px screen and 1920 px on a 2560 px
+one, since Material scales `rem` up on large screens — and widens both
+sidebars on screens of 1600 px and more so page titles wrap less. Below
+1220 px nothing changes; the PDF is not affected.
+
+Tune or revert it in the consuming project's `mkdocs.yaml`:
+
+```yaml
+plugins:
+  valutech-layout:
+    width: wide            # default (Material's 1220 px) | wide | full (no cap)
+    max_width: 90rem       # optional, overrides `width`
+    sidebar_width: 14rem   # sidebar width on large screens; "" keeps Material's
+```
+
 ## Risk Register
 
 A risk register kept as one Markdown file per risk. The plugin renders it into
@@ -416,6 +436,7 @@ PDF generation requires **WeasyPrint** native dependencies:
 │   ├── mkdocs-base.yml                 # Base config template
 │   ├── plugins/comments.py             # Page comments MkDocs plugin
 │   ├── plugins/risks/                  # Risk register MkDocs plugin
+│   ├── plugins/layout.py               # Page width MkDocs plugin
 │   ├── web/assets/valutech/            # Comment widget and risk register CSS + JS
 │   ├── api/                            # Comment API (Static Web Apps function)
 │   └── overrides/pdf/                  # PDF cover page and styles
