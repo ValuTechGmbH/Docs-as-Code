@@ -1,0 +1,291 @@
+/* Risk register editor — pending marks, side drawer and commit bar. Themed
+   with Material for MkDocs CSS variables; web only (the PDF never loads it). */
+
+:root {
+  --vt-risk-pending: #d97706;
+  --vt-risk-conflict: #b42318;
+  --vt-risk-committed: #1a7f37;
+  --vt-risk-deploying: #6e7781;
+}
+
+/* -- marks on the page ---------------------------------------------------- */
+
+.vt-risk-edit-badge {
+  display: inline-block;
+  margin-left: 0.4rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 1rem;
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 1.5;
+  color: #fff;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.vt-risk-edit-badge--pending { background: var(--vt-risk-pending); }
+.vt-risk-edit-badge--conflict { background: var(--vt-risk-conflict); }
+.vt-risk-edit-badge--committed { background: var(--vt-risk-committed); }
+.vt-risk-edit-badge--deploying { background: var(--vt-risk-deploying); }
+
+tr.vt-risk--pending > td:first-child { box-shadow: inset 3px 0 0 var(--vt-risk-pending); }
+tr.vt-risk--conflict > td:first-child { box-shadow: inset 3px 0 0 var(--vt-risk-conflict); }
+tr.vt-risk--committed > td:first-child { box-shadow: inset 3px 0 0 var(--vt-risk-committed); }
+
+.md-typeset .vt-risk-heading.vt-risk--pending,
+.md-typeset .vt-risk-heading.vt-risk--conflict {
+  padding-left: 0.6rem;
+  border-left: 3px solid var(--vt-risk-pending);
+}
+
+.md-typeset .vt-risk-heading.vt-risk--conflict { border-left-color: var(--vt-risk-conflict); }
+
+.vt-risk-chip.vt-risk--pending,
+.vt-risk-chip.vt-risk--conflict {
+  outline: 2px dashed var(--vt-risk-pending);
+  outline-offset: 1px;
+}
+
+.vt-risk-chip.vt-risk--conflict { outline-color: var(--vt-risk-conflict); }
+
+.md-typeset .md-button.vt-risk-edit-button,
+.md-typeset .md-button.vt-risk-edit-button:hover {
+  margin-left: 0.6rem;
+  padding: 0.1rem 0.6rem;
+  font-size: 0.6rem;
+  vertical-align: middle;
+}
+
+.md-typeset .md-button.vt-risk-edit-button[disabled] { opacity: 0.4; cursor: not-allowed; }
+
+.vt-risk-edit-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 0.6rem;
+}
+
+
+.vt-risk-edit-toolbar__who {
+  font-size: 0.65rem;
+  color: var(--md-default-fg-color--light);
+}
+
+/* -- drawer --------------------------------------------------------------- */
+
+.vt-risk-drawer {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  width: min(36rem, 100vw);
+  overflow-y: auto;
+  padding: 1rem 1.2rem 5rem;
+  font-size: 0.75rem;
+  color: var(--md-default-fg-color);
+  background: var(--md-default-bg-color);
+  box-shadow: -0.2rem 0 1rem rgba(0, 0, 0, 0.25);
+}
+
+.vt-risk-drawer h2 { margin: 0; font-size: 1rem; font-weight: 700; }
+.vt-risk-drawer h3 { margin: 0 0 0.4rem; font-size: 0.8rem; font-weight: 700; }
+
+.vt-risk-drawer__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.8rem;
+}
+
+/* Outside .md-typeset, Material leaves .md-button unstyled. */
+.vt-risk-drawer .md-button,
+.vt-risk-bar .md-button,
+.vt-risk-edit-toolbar .md-button {
+  display: inline-block;
+  padding: 0.2rem 0.8rem;
+  border: 0.1rem solid var(--md-primary-fg-color);
+  border-radius: 0.1rem;
+  font: inherit;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--md-primary-fg-color);
+  background: transparent;
+  cursor: pointer;
+  transition: color 125ms, background-color 125ms, border-color 125ms;
+}
+
+.vt-risk-drawer .md-button:not([disabled]):hover,
+.vt-risk-bar .md-button:not([disabled]):hover,
+.vt-risk-edit-toolbar .md-button:hover,
+.vt-risk-drawer .md-button--primary,
+.vt-risk-bar .md-button--primary {
+  border-color: var(--md-accent-fg-color);
+  color: var(--md-accent-bg-color);
+  background: var(--md-accent-fg-color);
+}
+
+.vt-risk-drawer .md-button--primary,
+.vt-risk-bar .md-button--primary {
+  border-color: var(--md-primary-fg-color);
+  color: var(--md-primary-bg-color);
+  background: var(--md-primary-fg-color);
+}
+
+.vt-risk-drawer .md-button.vt-risk-form__small { padding: 0.05rem 0.5rem; font-size: 0.62rem; }
+.vt-risk-drawer .md-button[disabled] { opacity: 0.4; cursor: not-allowed; }
+.vt-risk-drawer .vt-risk-drawer__close.md-button { border-color: transparent; color: var(--md-default-fg-color--light); }
+
+.vt-risk-drawer__problem {
+  margin: 0 0 0.8rem;
+  padding: 0.5rem 0.7rem;
+  border-left: 3px solid var(--vt-risk-conflict);
+  background: var(--md-code-bg-color);
+}
+
+.vt-risk-drawer__problem p { margin: 0 0 0.4rem; }
+
+.vt-risk-drawer__errors { margin: 0.6rem 0; padding-left: 1rem; color: var(--vt-risk-conflict); }
+.vt-risk-drawer__errors:empty { display: none; }
+
+.vt-risk-drawer__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+/* -- form ----------------------------------------------------------------- */
+
+.vt-risk-form__field {
+  display: block;
+  margin-bottom: 0.7rem;
+  padding-left: 0.5rem;
+  border-left: 3px solid transparent;
+}
+
+.vt-risk-form__field--changed { border-left-color: var(--vt-risk-pending); }
+.vt-risk-form__field > .md-button { margin-top: 0.3rem; }
+
+.vt-risk-form__label {
+  display: block;
+  margin-bottom: 0.15rem;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--md-default-fg-color--light);
+}
+
+.vt-risk-drawer input[type="text"],
+.vt-risk-drawer input[type="date"],
+.vt-risk-drawer select,
+.vt-risk-drawer textarea {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 0.3rem 0.45rem;
+  border: 1px solid var(--md-default-fg-color--lighter);
+  border-radius: 0.2rem;
+  font: inherit;
+  color: var(--md-default-fg-color);
+  background: var(--md-default-bg-color);
+}
+
+.vt-risk-drawer textarea { resize: vertical; }
+.vt-risk-drawer textarea.vt-risk-form__markdown { font-family: var(--md-code-font-family, monospace); font-size: 0.7rem; }
+
+.vt-risk-drawer input:focus,
+.vt-risk-drawer select:focus,
+.vt-risk-drawer textarea:focus {
+  outline: none;
+  border-color: var(--md-accent-fg-color);
+}
+
+.vt-risk-form__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0 0.6rem;
+}
+
+.vt-risk-form__row > .vt-risk-form__field { flex: 1 1 8rem; }
+.vt-risk-form__row > .vt-risk-level { margin-bottom: 0.9rem; }
+.vt-risk-form__row input[type="checkbox"] { margin: 0.4rem 0; }
+
+.vt-risk-form__mitigations {
+  margin: 0 0 0.7rem;
+  padding: 0.4rem 0.5rem 0.6rem;
+  border: 1px solid var(--md-default-fg-color--lightest);
+  border-left-width: 3px;
+  border-radius: 0.2rem;
+}
+
+.vt-risk-form__mitigations.vt-risk-form__field--changed { border-left-color: var(--vt-risk-pending); }
+.vt-risk-form__mitigations legend { padding: 0 0.3rem; font-size: 0.65rem; font-weight: 700; }
+
+.vt-risk-form__mitigation {
+  margin-bottom: 0.6rem;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px dashed var(--md-default-fg-color--lightest);
+}
+
+.vt-risk-form__mitigation .vt-risk-form__row { margin-top: 0.3rem; }
+.vt-risk-form__mitigation .vt-risk-form__row > select { flex: 0 0 8rem; }
+.vt-risk-form__mitigation .vt-risk-form__row > input { flex: 1 1 8rem; }
+
+/* -- review --------------------------------------------------------------- */
+
+.vt-risk-review {
+  margin-bottom: 1rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--md-default-fg-color--lightest);
+}
+
+.vt-risk-review__diff { width: 100%; margin: 0.3rem 0 0.5rem; border-collapse: collapse; }
+.vt-risk-review__diff th,
+.vt-risk-review__diff td {
+  padding: 0.2rem 0.4rem;
+  vertical-align: top;
+  text-align: left;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.vt-risk-review__diff th { width: 6rem; font-weight: 700; color: var(--md-default-fg-color--light); }
+.vt-risk-review__old { color: var(--md-default-fg-color--light); text-decoration: line-through; }
+.vt-risk-review__new { background: rgba(217, 119, 6, 0.12); }
+
+.vt-risk-commit__note { color: var(--md-default-fg-color--light); }
+.vt-risk-commit__status { font-weight: 700; }
+.vt-risk-commit__status:empty { display: none; }
+
+/* -- commit bar ----------------------------------------------------------- */
+
+.vt-risk-bar {
+  position: fixed;
+  left: 50%;
+  bottom: 1rem;
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  max-width: calc(100vw - 2rem);
+  padding: 0.5rem 0.8rem;
+  border-left: 4px solid var(--vt-risk-pending);
+  border-radius: 0.3rem;
+  font-size: 0.72rem;
+  color: var(--md-default-fg-color);
+  background: var(--md-default-bg-color);
+  box-shadow: 0 0.2rem 1rem rgba(0, 0, 0, 0.3);
+  transform: translateX(-50%);
+}
+
+.vt-risk-bar[hidden] { display: none; }
+.vt-risk-bar__summary { font-weight: 700; white-space: nowrap; }
+.vt-risk-bar .md-button { padding: 0.15rem 0.7rem; font-size: 0.68rem; white-space: nowrap; }
+.vt-risk-bar .md-button[disabled] { opacity: 0.4; cursor: not-allowed; }
+
+/* Keep the end of the page reachable above the bar. */
+.vt-risk-bar-open .md-content { padding-bottom: 4rem; }
+
+@media screen and (max-width: 44.9375em) {
+  .vt-risk-bar { left: 0.5rem; right: 0.5rem; flex-wrap: wrap; transform: none; }
+}

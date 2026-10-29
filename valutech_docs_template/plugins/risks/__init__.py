@@ -54,9 +54,13 @@ from .source import export, repo_path, schema
 
 log = logging.getLogger("mkdocs.plugins.valutech-risks")
 
-WEB_DIR = Path(__file__).resolve().parent.parent.parent / "web"
+PACKAGE_DIR = Path(__file__).resolve().parent.parent.parent
+WEB_DIR = PACKAGE_DIR / "web"
 ASSET_URI = "assets/valutech"
 ASSETS = ("risks.css", "risks.js")
+EDITOR_ASSETS = ("risks-editor.css", "risks-editor.js")
+RISKFILE_JS = PACKAGE_DIR / "api" / "lib" / "riskfile.js"
+"""Shared with the risks API, so the editor validates exactly like the server."""
 
 DEFAULT_LEVELS = [
     {"name": "Low", "max": 2, "color": "#2e7d32"},
@@ -146,6 +150,10 @@ class RisksPlugin(BasePlugin):
 
         config["extra_css"].append(f"{ASSET_URI}/risks.css?v={__version__}")
         config["extra_javascript"].append(f"{ASSET_URI}/risks.js?v={__version__}")
+        if self._schema:
+            config["extra_css"].append(f"{ASSET_URI}/risks-editor.css?v={__version__}")
+            config["extra_javascript"].append(f"{ASSET_URI}/riskfile.js?v={__version__}")
+            config["extra_javascript"].append(f"{ASSET_URI}/risks-editor.js?v={__version__}")
         return config
 
     def _build_scale(self) -> Scale:
@@ -207,10 +215,12 @@ class RisksPlugin(BasePlugin):
         if not self.config["enabled"]:
             return files
 
-        for name in ASSETS:
-            files.append(
-                File.generated(config, f"{ASSET_URI}/{name}", abs_src_path=str(WEB_DIR / ASSET_URI / name))
-            )
+        assets = {name: WEB_DIR / ASSET_URI / name for name in ASSETS}
+        if self._schema:
+            assets.update({name: WEB_DIR / ASSET_URI / name for name in EDITOR_ASSETS})
+            assets["riskfile.js"] = RISKFILE_JS
+        for name, path in assets.items():
+            files.append(File.generated(config, f"{ASSET_URI}/{name}", abs_src_path=str(path)))
 
         self._risks, self._problems = [], []
         if self._dir.is_dir():

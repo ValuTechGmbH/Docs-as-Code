@@ -279,6 +279,7 @@ class BuildTest(unittest.TestCase):
         self.assertEqual(data["risks"][0]["url"], "project/risks/#t1")
         self.assertFalse((self.root / "site/risks-source.json").exists())  # editor off
         self.assertNotIn("data-editor-api", html)
+        self.assertFalse((self.root / "site/assets/valutech/risks-editor.js").exists())
 
     def test_editor_exports(self):
         config = (self.root / "mkdocs.yml").read_text()
@@ -305,6 +306,9 @@ class BuildTest(unittest.TestCase):
         self.assertNotIn("problem", t1)
         self.assertIn("is not on the scale", files["risks/bad.md"]["problem"])
         self.assertEqual(files["risks/bad.md"]["form"]["probability"], "huge")  # still editable, to fix it
+
+        for asset in ("risks-editor.js", "risks-editor.css", "riskfile.js"):
+            self.assertTrue((self.root / "site/assets/valutech" / asset).is_file(), asset)
 
         api_schema = json.loads((self.root / "api/risks/schema.json").read_text())
         self.assertEqual(api_schema, source["schema"])
