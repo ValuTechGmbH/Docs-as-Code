@@ -11,6 +11,9 @@ installation id, so all three application settings come out of one run.
         --org geobrugg-sentra --repo sentra-system-docs \
         --site-url https://docs.example.com
 
+Add --with-risk-editor to also grant Contents: write, which the risk register's
+browser editor needs to commit (api/risks only ever writes the risk directory).
+
 Interrupted after the App was created? Skip straight to the installation lookup:
 
     valutech-docs-github-app --app-id 123456 --pem ./<slug>.private-key.pem
@@ -91,12 +94,20 @@ def app_jwt(app_id: str, pem_path: Path) -> str:
 # manifest flow
 # --------------------------------------------------------------------------- #
 
+def permissions(args) -> dict:
+    granted = {"issues": "write", "metadata": "read"}
+    if args.with_risk_editor:
+        granted["contents"] = "write"
+    return granted
+
+
 def build_manifest(args, redirect_url: str) -> dict:
     homepage = args.site_url or f"https://github.com/{args.org}/{args.repo}"
     return {
         "name": args.name,
         "description": (
-            "Opens one issue per reader comment submitted from the documentation site."
+            "Opens one issue per reader comment submitted from the documentation site"
+            + (", and commits risk register edits made on it." if args.with_risk_editor else ".")
         ),
         "url": homepage,
         "redirect_url": redirect_url,
@@ -104,7 +115,7 @@ def build_manifest(args, redirect_url: str) -> dict:
         # No webhooks: the App only ever acts on requests from the docs API.
         "hook_attributes": {"url": f"{homepage.rstrip('/')}/unused-webhook", "active": False},
         "default_events": [],
-        "default_permissions": {"issues": "write", "metadata": "read"},
+        "default_permissions": permissions(args),
         "request_oauth_on_install": False,
     }
 
@@ -297,6 +308,10 @@ def main() -> None:
     parser.add_argument("--repo", help='docs repository as "owner/name" or just "name" with --org')
     parser.add_argument("--name", help="App name, shown as the issue author (default: <repo>-comments)")
     parser.add_argument("--site-url", default="", help="documentation site root (DOCS_SITE_URL)")
+    parser.add_argument(
+        "--with-risk-editor", action="store_true",
+        help="also grant Contents: write, for committing risk register edits made in the browser",
+    )
     parser.add_argument("--port", type=int, default=8912, help="local callback port (default: 8912)")
     parser.add_argument("--out", default=".", help="directory for the key and the Azure CLI script")
     parser.add_argument("--timeout", type=int, default=600, help="seconds to wait for each browser step")

@@ -7,7 +7,7 @@ MkDocs documentation template with Material theme and PDF export, packaged for r
 - **Material for MkDocs** theme with light/dark mode
 - **Page comments** — readers comment on a page, each comment opens a GitHub issue
 - **Wider layout** — uses more of large screens than Material's 1220 px default
-- **Risk register** — one Markdown file per risk, rendered as matrix, filterable register and PDF chapter
+- **Risk register** — one Markdown file per risk, rendered as matrix, filterable register and PDF chapter; optionally edited in the browser and committed through the GitHub App
 - **PDF export** via `mkdocs-with-pdf` (optional, env-gated)
 - **Custom PDF styling** — branded cover page, headers, footers
 - **Python package** — installable via `pip` for consuming projects
@@ -395,6 +395,60 @@ reference, …) are build warnings naming the file, and that risk is left out �
 run `mkdocs build --strict` in CI to fail on them.
 
 Run the plugin tests with `python -m unittest tests/test_risks.py`.
+
+### Editing in the browser
+
+Signed-in users with **write access to the repository** can edit risks on the
+register page: an *Edit* button on every risk, *New risk* above the register.
+Edits stay pending in the browser — marked on the headings, table rows and
+matrix chips — until *Commit* writes them to the branch as one commit, made by
+the GitHub App with the editor as `Co-authored-by`. The site shows the change
+after the next deploy; until then the risk is marked *committed*. A risk that
+changed on the branch since the page was built is locked as *deploying*, and a
+pending edit on it is flagged as a conflict instead of overwriting it.
+
+It builds on the page-comment setup (GitHub App, Static Web App settings,
+`valutech-docs-init --with-api`), plus:
+
+1. **App permission** — the App needs **Contents: Read and write**. New Apps:
+   `valutech-docs-github-app ... --with-risk-editor`. Existing App: add the
+   permission under *Settings → Developer settings → GitHub Apps → the App →
+   Permissions*; an organisation owner then has to accept it on the
+   installation. The function only ever writes `.md` files inside the risk
+   directory.
+2. **Route** in `staticwebapp.config.json`, next to the comments one:
+   `{ "route": "/api/risks/*", "allowedRoles": ["reader"] }`.
+3. **Plugin config** — the API, and an `id_prefix` per category so new risks
+   can be numbered (`K` → the next free `K<n>`):
+
+   ```yaml
+   plugins:
+     valutech-risks:
+       editor:
+         api_base: /api/risks
+       categories:
+         communication:
+           title: Communication
+           id_prefix: K
+   ```
+
+4. Optionally `GITHUB_BRANCH` in the Static Web App settings (default `main`).
+
+The build then writes `risks-source.json` (each file's fields and git blob id)
+for the editor, and the validation rules into the generated
+`api/risks/schema.json` for the function — both derive from `mkdocs.yaml`, so
+they cannot drift. The function answers 404 while that file is missing.
+
+Files are written in one canonical layout, so an edit changes only its own
+lines. Before enabling the editor, bring existing files into that layout once
+(needs `node`), and commit the result on its own:
+
+```bash
+python -m valutech_docs_template.plugins.risks.source risks/           # list
+python -m valutech_docs_template.plugins.risks.source --write risks/   # rewrite
+```
+
+Run the API's checks with `node tests/risks-api.smoke.js`.
 
 ## Build Commands
 
