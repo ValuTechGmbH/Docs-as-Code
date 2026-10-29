@@ -19,8 +19,9 @@
  *   DOCS_SITE_URL                 site root, used for the link in the issue
  */
 
-const { paginate, request } = require("../lib/github");
-const { HttpError, buildIssue, parseIssue, validate } = require("../lib/issue");
+const { paginate, readAppConfig, request } = require("../lib/github");
+const { HttpError, fail, principal, readJson, respond } = require("../lib/http");
+const { buildIssue, parseIssue, validate } = require("../lib/issue");
 
 const DEFAULT_LABEL = "docs-comment";
 const LIST_CACHE_MS = 20_000;
@@ -30,60 +31,11 @@ let listCache = null;
 const ensuredLabels = new Set();
 
 function readConfig() {
-  const config = {
-    appId: process.env.GITHUB_APP_ID,
-    installationId: process.env.GITHUB_APP_INSTALLATION_ID,
-    privateKey: process.env.GITHUB_APP_PRIVATE_KEY,
-    repo: process.env.GITHUB_REPO,
+  return {
+    ...readAppConfig("Comments are"),
     label: process.env.GITHUB_COMMENT_LABEL || DEFAULT_LABEL,
     siteUrl: process.env.DOCS_SITE_URL || ""
   };
-
-  const missing = ["appId", "installationId", "privateKey", "repo"].filter((key) => !config[key]);
-  if (missing.length) {
-    const names = {
-      appId: "GITHUB_APP_ID",
-      installationId: "GITHUB_APP_INSTALLATION_ID",
-      privateKey: "GITHUB_APP_PRIVATE_KEY",
-      repo: "GITHUB_REPO"
-    };
-    const error = new HttpError(503, "Comments are not configured.");
-    error.detail = `missing application settings: ${missing.map((key) => names[key]).join(", ")}`;
-    throw error;
-  }
-
-  if (!/^[\w.-]+\/[\w.-]+$/.test(config.repo)) {
-    const error = new HttpError(503, "Comments are not configured.");
-    error.detail = `GITHUB_REPO is not "owner/name": ${config.repo}`;
-    throw error;
-  }
-
-  return config;
-}
-
-/** The signed-in GitHub user, as reported by the Static Web Apps edge. */
-function principal(req) {
-  const headers = req.headers || {};
-  const raw = headers["x-ms-client-principal"] || headers["X-MS-CLIENT-PRINCIPAL"];
-  if (!raw) throw new HttpError(401, "Sign in to comment.");
-
-  let parsed;
-  try {
-    parsed = JSON.parse(Buffer.from(raw, "base64").toString("utf8"));
-  } catch (error) {
-    throw new HttpError(401, "Sign in to comment.");
-  }
-
-  if (parsed.identityProvider !== "github") {
-    throw new HttpError(403, "Commenting requires signing in with GitHub.");
-  }
-
-  const login = String(parsed.userDetails || "").trim();
-  if (!/^[A-Za-z0-9-]{1,39}$/.test(login)) {
-    throw new HttpError(403, "Your GitHub username could not be determined.");
-  }
-
-  return { login };
 }
 
 async function listIssues(config) {
@@ -137,9 +89,8 @@ async function handleList(config, req) {
 }
 
 async function handleCreate(config, req) {
-  const { login } = principal(req);
-  const body = typeof req.body === "string" ? JSON.parse(req.body || "{}") : req.body;
-  const comment = validate(body);
+  const { login } = principal(req, "comment");
+  const comment = validate(readJson(req));
 
   await ensureLabel(config);
 
@@ -152,14 +103,6 @@ async function handleCreate(config, req) {
   listCache = null;
 
   return parseIssue(issue);
-}
-
-function respond(context, status, body) {
-  context.res = {
-    status,
-    headers: { "content-type": "application/json", "cache-control": "no-store" },
-    body: JSON.stringify(body)
-  };
 }
 
 module.exports = async function (context, req) {
@@ -176,11 +119,6 @@ module.exports = async function (context, req) {
       respond(context, 405, { error: "Method not allowed." });
     }
   } catch (error) {
-    const status = error.status || 500;
-    if (error.detail) context.log.error(`comments: ${error.detail}`);
-    if (status >= 500) context.log.error("comments:", error);
-    respond(context, status, {
-      error: status >= 500 && !error.status ? "Internal error." : error.message
-    });
+    fail(context, "comments", error);
   }
 };

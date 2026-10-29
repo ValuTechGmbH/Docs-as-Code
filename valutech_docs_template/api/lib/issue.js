@@ -17,18 +17,13 @@
  *   > the comment, quoted, to the end of the body
  */
 
+const { HttpError } = require("./http");
+
 const MARKER_RE = /<!--\s*vt-docs\s+(\{[\s\S]*?\})\s*-->/;
 const TEXT_MARKER = "<!-- vt-docs-text -->";
 
 const MAX_TEXT = 4000;
 const MAX_TITLE = 200;
-
-class HttpError extends Error {
-  constructor(status, message) {
-    super(message);
-    this.status = status;
-  }
-}
 
 /** Strip anything that could break out of our HTML comment marker. */
 function plain(value, maxLength) {

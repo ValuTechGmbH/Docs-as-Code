@@ -31,3 +31,6 @@ Thumbs.db
 # Secrets emitted by valutech-docs-github-app
 *.private-key.pem
 set-swa-appsettings-*.sh
+
+# Written by the risks plugin into the generated api/ (and by tests/risks-api.smoke.js)
+valutech_docs_template/api/risks/schema.json

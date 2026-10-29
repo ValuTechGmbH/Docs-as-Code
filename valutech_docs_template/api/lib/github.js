@@ -20,10 +20,38 @@ const API_VERSION = "2022-11-28";
 let cachedToken = null;
 
 class GitHubError extends Error {
-  constructor(status, message) {
+  /* `status` is what we answer with; `githubStatus` what GitHub answered. */
+  constructor(status, message, githubStatus) {
     super(message);
     this.status = status;
+    this.githubStatus = githubStatus;
   }
+}
+
+const APP_SETTINGS = {
+  appId: "GITHUB_APP_ID",
+  installationId: "GITHUB_APP_INSTALLATION_ID",
+  privateKey: "GITHUB_APP_PRIVATE_KEY",
+  repo: "GITHUB_REPO"
+};
+
+/** The App credentials from application settings; a 503 naming what is missing. */
+function readAppConfig(feature) {
+  const config = {};
+  for (const [key, name] of Object.entries(APP_SETTINGS)) config[key] = process.env[name];
+
+  const missing = Object.keys(APP_SETTINGS).filter((key) => !config[key]);
+  if (missing.length) {
+    const error = new GitHubError(503, `${feature} not configured.`);
+    error.detail = `missing application settings: ${missing.map((key) => APP_SETTINGS[key]).join(", ")}`;
+    throw error;
+  }
+  if (!/^[\w.-]+\/[\w.-]+$/.test(config.repo)) {
+    const error = new GitHubError(503, `${feature} not configured.`);
+    error.detail = `GITHUB_REPO is not "owner/name": ${config.repo}`;
+    throw error;
+  }
+  return config;
 }
 
 function base64url(input) {
@@ -108,7 +136,8 @@ async function request(config, path, options = {}) {
     const payload = await response.json().catch(() => ({}));
     throw new GitHubError(
       response.status === 403 || response.status === 429 ? 503 : 502,
-      `GitHub API ${response.status}: ${payload.message || "request failed"}`
+      `GitHub API ${response.status}: ${payload.message || "request failed"}`,
+      response.status
     );
   }
 
@@ -131,4 +160,4 @@ async function paginate(config, path, maxPages = 5) {
   return items;
 }
 
-module.exports = { GitHubError, paginate, request };
+module.exports = { GitHubError, paginate, readAppConfig, request };
