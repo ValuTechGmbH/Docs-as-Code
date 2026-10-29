@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import datetime as dt
+import hashlib
 import json
 import shutil
 import subprocess
@@ -25,7 +26,7 @@ from pathlib import Path
 
 import yaml
 
-from .model import FRONT_MATTER, RiskError, _list
+from .model import FRONT_MATTER, MITIGATION_STATUSES, STATUSES, RiskError, Scale, _list
 
 RISKFILE_JS = Path(__file__).resolve().parent.parent.parent / "api" / "lib" / "riskfile.js"
 
@@ -89,6 +90,65 @@ def read_source(path: Path) -> dict:
         "extra": _extra(meta, RISK_KEYS),
         "body": text[match.end():],
     }
+
+
+def blob_sha(data: bytes) -> str:
+    """The git blob id of `data`, so the editor can tell whether `main` moved past the build."""
+    return hashlib.sha1(b"blob %d\0" % len(data) + data).hexdigest()
+
+
+def repo_path(path: Path) -> str:
+    """`path` relative to the root of its git checkout (or as given outside one)."""
+    path = path.resolve()
+    try:
+        root = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"], cwd=path if path.is_dir() else path.parent,
+            capture_output=True, text=True, check=True,
+        ).stdout.strip()
+        return path.relative_to(Path(root).resolve()).as_posix()
+    except (OSError, subprocess.CalledProcessError, ValueError):
+        return path.name
+
+
+def schema(scale: Scale, categories: dict, directory: str, default_repo: str | None) -> dict:
+    """Everything the editor and the risks API validate a risk against."""
+    return {
+        "dir": directory,
+        "default_repo": default_repo,
+        "probability": list(scale.probability),
+        "impact": list(scale.impact),
+        "levels": [{"name": lv.name, "max": lv.max, "color": lv.color} for lv in scale.levels],
+        "statuses": list(STATUSES),
+        "mitigation_statuses": list(MITIGATION_STATUSES),
+        "categories": {
+            key: {"title": value["title"], "id_prefix": value.get("id_prefix")} for key, value in categories.items()
+        },
+    }
+
+
+def export(directory: Path, repo_dir: str, problems: list[str]) -> list[dict]:
+    """Every risk file as `{path, sha, form}`; a file the register skipped carries its `problem`.
+
+    `problems` are the `"<path>: <message>"` lines from `load_risks`.
+    """
+    entries = []
+    for path in sorted(directory.rglob("*.md")):
+        prefix = f"{path}: "
+        problem = next((p[len(prefix):] for p in problems if p.startswith(prefix)), None)
+        entry = {
+            "path": f"{repo_dir}/{path.relative_to(directory).as_posix()}",
+            "sha": blob_sha(path.read_bytes()),
+        }
+        try:
+            entry["form"] = read_source(path)
+        except RiskError as error:
+            entry["form"] = None
+            entry["problem"] = str(error)
+        else:
+            if problem:
+                entry["problem"] = problem
+        entries.append(entry)
+    return entries
 
 
 def format_risks(forms: list[dict]) -> list[str]:

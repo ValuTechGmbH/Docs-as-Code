@@ -59,6 +59,8 @@ class Context:
     backlinks: dict[str, list[tuple[str, str]]]
     """Risk id (lower case) -> [(link relative to the register page, page title)]."""
     today: dt.date
+    editor: dict | None = None
+    """`data_*` attributes for the register container when the browser editor is on."""
 
     def is_stale(self, risk: Risk) -> bool:
         if not self.review_days or not risk.reviewed or risk.status == "closed":
@@ -97,7 +99,8 @@ def chip(risk: Risk, rating: Rating) -> str:
     level = rating.level
     style = f"background:{level.color};color:{level.text_color}"
     title = escape(f"{risk.id} — {risk.title}", quote=True)
-    return f'<a class="vt-risk-chip" href="#{risk.anchor}" title="{title}" style="{style}">{escape(risk.id)}</a>'
+    data = attrs(data_risk=risk.id)
+    return f'<a class="vt-risk-chip" href="#{risk.anchor}" title="{title}" style="{style}" {data}>{escape(risk.id)}</a>'
 
 
 def rating_text(rating: Rating) -> str:
@@ -203,7 +206,7 @@ def register_table(ctx: Context) -> str:
             "</tr>"
         )
     return (
-        '<div class="vt-risk-register" data-vt-risk-register>'
+        f'<div class="vt-risk-register" data-vt-risk-register{" " + attrs(**ctx.editor) if ctx.editor else ""}>'
         f'<table class="vt-risk-table">{head}<tbody>{"".join(rows)}</tbody></table></div>'
     )
 
@@ -229,7 +232,7 @@ def facts(risk: Risk, ctx: Context) -> str:
 
 def details(risk: Risk, ctx: Context) -> str:
     parts = [
-        f"### {risk.id} — {risk.title} {{#{risk.anchor} .vt-risk-heading}}",
+        f'### {risk.id} — {risk.title} {{#{risk.anchor} .vt-risk-heading data-risk="{risk.id}"}}',
         facts(risk, ctx),
     ]
     if risk.body:

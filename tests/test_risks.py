@@ -17,7 +17,7 @@ from mkdocs.config import load_config
 
 from valutech_docs_template.plugins.risks.issues import IssueLookup, IssueState
 from valutech_docs_template.plugins.risks.model import IssueRef, RiskError, Scale, Level, parse_issue, parse_risk
-from valutech_docs_template.plugins.risks.source import format_risks, read_source
+from valutech_docs_template.plugins.risks.source import blob_sha, format_risks, read_source
 
 SCALE = Scale(("low", "medium", "high"), ("low", "medium", "high"), (Level("Low", 2, "#2e7d32"), Level("High", None, "#c62828")))
 
@@ -277,6 +277,41 @@ class BuildTest(unittest.TestCase):
         data = json.loads((self.root / "site/risks.json").read_text())
         self.assertEqual([r["id"] for r in data["risks"]], ["T1", "T10"])
         self.assertEqual(data["risks"][0]["url"], "project/risks/#t1")
+        self.assertFalse((self.root / "site/risks-source.json").exists())  # editor off
+        self.assertNotIn("data-editor-api", html)
+
+    def test_editor_exports(self):
+        config = (self.root / "mkdocs.yml").read_text()
+        config = config.replace("technical: Technical", "technical: { title: Technical, id_prefix: T }")
+        config += "      editor:\n        api_base: /api/risks\n"
+        (self.root / "mkdocs.yml").write_text(config)
+        write(self.root / "api/.valutech-generated", "generated\n")
+        self.build()
+
+        html = (self.root / "site/project/risks/index.html").read_text()
+        self.assertIn('data-editor-api="/api/risks"', html)
+        self.assertIn('data-editor-source="../../risks-source.json"', html)
+        self.assertIn('class="vt-risk-heading" data-risk="T1"', html)
+        self.assertRegex(html, r'class="vt-risk-chip"[^>]*data-risk="T1"')
+
+        source = json.loads((self.root / "site/risks-source.json").read_text())
+        self.assertEqual(source["schema"]["dir"], "risks")
+        self.assertEqual(source["schema"]["categories"]["technical"], {"title": "Technical", "id_prefix": "T"})
+        files = {f["path"]: f for f in source["files"]}
+        self.assertEqual(sorted(files), ["risks/T1.md", "risks/T10.md", "risks/bad.md", "risks/dup.md"])
+        t1 = files["risks/T1.md"]
+        self.assertEqual(t1["sha"], blob_sha((self.root / "risks/T1.md").read_bytes()))
+        self.assertEqual(t1["form"]["mitigations"][1], {"text": "Test more", "status": "planned", "issues": [], "extra": {}})
+        self.assertNotIn("problem", t1)
+        self.assertIn("is not on the scale", files["risks/bad.md"]["problem"])
+        self.assertEqual(files["risks/bad.md"]["form"]["probability"], "huge")  # still editable, to fix it
+
+        api_schema = json.loads((self.root / "api/risks/schema.json").read_text())
+        self.assertEqual(api_schema, source["schema"])
+
+    def test_blob_sha_matches_git(self):
+        self.assertEqual(blob_sha(b""), "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391")
+        self.assertEqual(blob_sha(b"hello\n"), "ce013625030ba8dba906f756967f9e9ca394464a")
 
     def test_issue_states_with_token(self):
         def fetch(self, ref):
