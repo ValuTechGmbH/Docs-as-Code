@@ -1,8 +1,8 @@
 "use strict";
 
 /*
- * GET  /api/risks/me       -> { login, canEdit }
- * GET  /api/risks/state    -> { head, files: { path: blobSha } } on the branch
+ * GET  /api/risks/me       -> { login, canEdit, branch }
+ * GET  /api/risks/state    -> { branch, head, files: { path: blobSha } } on the branch
  * POST /api/risks/commit   -> commits edited and new risks to the branch
  *
  * The browser editor (risks-editor.js) keeps edits pending until the user
@@ -250,8 +250,8 @@ function plan(config, changes, files, ids) {
   }
 
   if (conflicts.length) {
-    const error = new HttpError(409, "Some risks changed since you started editing.");
-    error.body = { conflicts };
+    const error = new HttpError(409, `Some risks changed on ${config.branch} since you started editing.`);
+    error.body = { branch: config.branch, conflicts };
     throw error;
   }
   return writes.map((write) => ({ ...write, content: formatRisk(write.risk) }));
@@ -311,11 +311,11 @@ module.exports = async function (context, req) {
 
     if (method === "GET" && action === "me") {
       const { login } = principal(req, "edit risks");
-      respond(context, 200, { login, canEdit: await canEdit(config, login) });
+      respond(context, 200, { login, canEdit: await canEdit(config, login), branch: config.branch });
     } else if (method === "GET" && action === "state") {
       principal(req, "edit risks");
       const base = await head(config);
-      respond(context, 200, { head: base.sha, files: await riskFiles(config, base.tree) });
+      respond(context, 200, { branch: config.branch, head: base.sha, files: await riskFiles(config, base.tree) });
     } else if (method === "POST" && action === "commit") {
       const { login } = principal(req, "edit risks");
       respond(context, 201, await commit(config, login, readJson(req)));

@@ -164,12 +164,13 @@ async function main() {
   fs.writeFileSync(SCHEMA_PATH, JSON.stringify(SCHEMA));
   delete require.cache[SCHEMA_PATH];
 
-  check("me/writer", (await call("GET", "me")).body, { login: "writer", canEdit: true });
-  check("me/reader", (await call("GET", "me", { login: "reader" })).body, { login: "reader", canEdit: false });
+  check("me/writer", (await call("GET", "me")).body, { login: "writer", canEdit: true, branch: "main" });
+  check("me/reader", (await call("GET", "me", { login: "reader" })).body, { login: "reader", canEdit: false, branch: "main" });
   check("me/stranger", (await call("GET", "me", { login: "stranger" })).body.canEdit, false);
   check("me/anonymous -> 401", (await call("GET", "me", { login: null })).status, 401);
 
   const state = await call("GET", "state");
+  check("state names the branch", state.body.branch, "main");
   check("state lists risk files only", Object.keys(state.body.files).sort(), ["risks/C1-cloud.md", "risks/K1-mesh-routing.md", "risks/K4-antennas.md"]);
   const k1Sha = state.body.files["risks/K1-mesh-routing.md"];
   const k4Sha = state.body.files["risks/K4-antennas.md"];
