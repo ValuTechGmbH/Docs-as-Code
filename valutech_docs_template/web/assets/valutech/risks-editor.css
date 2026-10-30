@@ -65,10 +65,15 @@ tr.vt-risk--committed > td:first-child { box-shadow: inset 3px 0 0 var(--vt-risk
   margin-bottom: 0.6rem;
 }
 
-
 .vt-risk-edit-toolbar__who {
   font-size: 0.65rem;
   color: var(--md-default-fg-color--light);
+}
+
+.vt-risk-edit-toolbar__error {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--vt-risk-conflict);
 }
 
 /* -- drawer --------------------------------------------------------------- */
@@ -144,6 +149,9 @@ tr.vt-risk--committed > td:first-child { box-shadow: inset 3px 0 0 var(--vt-risk
 }
 
 .vt-risk-drawer__problem p { margin: 0 0 0.4rem; }
+.vt-risk-drawer__problem--error { border-left-width: 4px; }
+.vt-risk-drawer__problem-title { font-weight: 700; color: var(--vt-risk-conflict); }
+.vt-risk-drawer__problem .vt-risk-drawer__errors { margin: 0.2rem 0 0.4rem; }
 
 .vt-risk-drawer__errors { margin: 0.6rem 0; padding-left: 1rem; color: var(--vt-risk-conflict); }
 .vt-risk-drawer__errors:empty { display: none; }

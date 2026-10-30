@@ -108,8 +108,13 @@
 
   async function getJson(url) {
     var response = await fetch(url, { headers: { accept: "application/json" }, cache: "no-store" });
-    if (!response.ok) throw new Error(url + ": " + response.status);
-    return response.json();
+    var payload = await response.json().catch(function () { return null; });
+    if (!response.ok || !payload) {
+      var error = new Error((payload && payload.error) || url + " answered " + response.status + ".");
+      error.status = response.status;
+      throw error;
+    }
+    return payload;
   }
 
   // -- editor ------------------------------------------------------------------
@@ -119,6 +124,7 @@
     this.api = api;
     this.schema = source.schema;
     this.login = me.login;
+    this.branch = state.branch || me.branch || "main";
     this.key = STORE + new URL(root.dataset.editorSource, window.location.href).pathname;
 
     this.files = {};     // path -> { path, sha (build), form, problem, live (branch sha) }
@@ -163,7 +169,8 @@
       }
       if (edit.path) {
         if (!file) edit.conflict = "deleted";
-        else if (file.sha !== edit.baseSha || (file.live && file.live !== edit.baseSha)) edit.conflict = "changed";
+        else if (!file.live) edit.conflict = "deleted";
+        else if (file.sha !== edit.baseSha || file.live !== edit.baseSha) edit.conflict = "changed";
         else delete edit.conflict;
       }
     });
@@ -177,10 +184,16 @@
       .filter(function (edit) { return !edit.committed; });
   };
 
-  /* Changed on the branch since this page was built, and not by an edit we track. */
+  /* Changed or gone on the branch since this page was built, and not by an edit we track. */
   Editor.prototype.deploying = function (path) {
     var file = this.files[path];
-    return Boolean(file && file.live && file.live !== file.sha);
+    return Boolean(file && file.live !== file.sha);
+  };
+
+  /* Built files the branch does not have: all of them means the page was built from another branch. */
+  Editor.prototype.missing = function () {
+    var self = this;
+    return Object.keys(this.files).filter(function (p) { return !self.files[p].live; });
   };
 
   // -- page marks --
@@ -212,18 +225,27 @@
       var host = isRow ? node.cells[0] : node;
       if (kind && (isHeading || isRow)) {
         var labels = { pending: "pending", committed: "committed", conflict: "conflict", deploying: "deploying" };
+        if (kind === "deploying" && !self.files[path].live) labels.deploying = "not on " + self.branch;
         var badge = el("span", "vt-risk-edit-badge vt-risk-edit-badge--" + kind, labels[kind]);
         badge.dataset.vtEditBadge = "";
         if (kind === "committed") badge.title = "Committed; the site shows it after the next deploy";
-        if (kind === "deploying") badge.title = "Changed on the branch since this page was built";
-        if (kind === "conflict") badge.title = "The risk changed on the branch since you edited it";
+        if (kind === "deploying") {
+          badge.title = self.files[path].live
+            ? "Changed on " + self.branch + " since this page was built"
+            : "Not on " + self.branch + ", the branch edits are committed to";
+        }
+        if (kind === "conflict") badge.title = edit.conflict === "deleted"
+          ? "Not on " + self.branch + " any more"
+          : "The risk changed on " + self.branch + " since you edited it";
         host.appendChild(badge);
       }
       if (isHeading) {
         var edit_ = button("Edit", "vt-risk-edit-button", function () { self.open(path); });
         edit_.dataset.vtEditBadge = "";
         edit_.disabled = kind === "committed" || kind === "deploying";
-        if (edit_.disabled) edit_.title = "Wait for the deploy before editing again";
+        if (edit_.disabled) edit_.title = kind === "deploying" && !self.files[path].live
+          ? "Not on " + self.branch + ", so it cannot be edited here"
+          : "Wait for the deploy before editing again";
         node.appendChild(edit_);
       }
     });
@@ -265,8 +287,8 @@
     if (edit && edit.conflict) {
       var note = el("div", "vt-risk-drawer__problem");
       note.appendChild(el("p", null, edit.conflict === "deleted"
-        ? "This risk was deleted on the branch."
-        : "This risk changed on the branch since you edited it. Discard your edit, or keep it on top of the current version once the site shows it."));
+        ? "This risk does not exist on " + this.branch + ", the branch edits are committed to. Discard your edit."
+        : "This risk changed on " + this.branch + " since you edited it. Discard your edit, or keep it on top of the current version once the site shows it."));
       if (edit.conflict === "changed" && file && !this.deploying(path)) {
         note.appendChild(button("Keep my edit on the current version", "", function () {
           edit.baseSha = file.sha;
@@ -545,7 +567,7 @@
     return Object.keys(this.files).filter(function (p) { return self.files[p].problem; });
   };
 
-  Editor.prototype.review = function (committing) {
+  Editor.prototype.review = function (committing, notice) {
     var self = this;
     var schema = this.schema;
     this.close();
@@ -556,6 +578,7 @@
     head.appendChild(el("h2", null, committing ? "Commit risk changes" : "Review risk changes"));
     head.appendChild(button("✕", "vt-risk-drawer__close", function () { self.close(); }));
     drawer.appendChild(head);
+    if (notice) drawer.appendChild(this.failure(notice));
 
     Object.keys(this.edits).forEach(function (key) {
       var edit = self.edits[key];
@@ -609,7 +632,7 @@
     if (committing && pending.length) {
       var message = el("textarea", "vt-risk-commit__message");
       message.rows = 3;
-      message.value = defaultMessage(pending);
+      message.value = (notice && notice.message) || defaultMessage(pending);
       var wrap = el("label", "vt-risk-form__field");
       wrap.appendChild(el("span", "vt-risk-form__label", "Commit message"));
       wrap.appendChild(message);
@@ -617,32 +640,29 @@
       drawer.appendChild(el("p", "vt-risk-commit__note",
         "Commits to the repository as the docs App, with you (@" + self.login + ") as co-author. The site updates after the next deploy."));
       var status = el("p", "vt-risk-commit__status");
-      var errors = el("ul", "vt-risk-drawer__errors");
       var go = button("Commit " + pending.length + " change" + (pending.length === 1 ? "" : "s"), "md-button--primary", async function () {
         go.disabled = true;
         status.textContent = "Committing…";
-        errors.textContent = "";
+        var result;
         try {
-          var result = await self.commit(message.value);
-          status.textContent = "";
-          if (result.ok) {
-            self.close();
-            self.mark();
-            return;
-          }
-          status.textContent = result.error;
-          (result.problems || []).forEach(function (p) { errors.appendChild(el("li", null, p)); });
-          self.mark();
+          result = await self.commit(message.value);
         } catch (error) {
-          status.textContent = "Could not reach the server. Your edits are still pending.";
+          result = { ok: false, error: "Could not reach the server (" + error.message + ")." };
         }
-        go.disabled = false;
+        self.mark();
+        if (result.ok) {
+          self.close();
+          return;
+        }
+        result.message = message.value;
+        // Re-render, so conflict badges show, with the failure at the top.
+        self.review(true, result);
       });
+      go.disabled = pending.some(function (edit) { return edit.conflict; });
       var actions = el("div", "vt-risk-drawer__actions");
       actions.appendChild(go);
       actions.appendChild(button("Cancel", "", function () { self.close(); }));
       drawer.appendChild(status);
-      drawer.appendChild(errors);
       drawer.appendChild(actions);
     } else if (pending.length) {
       var more = el("div", "vt-risk-drawer__actions");
@@ -653,6 +673,37 @@
     document.body.appendChild(drawer);
     this.onKey = function (event) { if (event.key === "Escape") self.close(); };
     document.addEventListener("keydown", this.onKey);
+  };
+
+  /* The box at the top of the review drawer after a failed commit. */
+  Editor.prototype.failure = function (notice) {
+    var self = this;
+    var box = el("div", "vt-risk-drawer__problem vt-risk-drawer__problem--error");
+    box.setAttribute("role", "alert");
+    box.appendChild(el("p", "vt-risk-drawer__problem-title", "Nothing was committed. " + notice.error));
+    var items = (notice.problems || []).slice();
+    (notice.conflicts || []).forEach(function (c) {
+      var file = self.files[c.path];
+      var name = (file && file.form && file.form.id) || c.path;
+      if (c.reason === "exists") return items.push(c.message || c.path + " already exists.");
+      items.push(name + ": " + (c.reason === "deleted"
+        ? "does not exist on " + self.branch + "."
+        : c.reason === "id"
+          ? "its ID cannot be changed."
+          : "changed on " + self.branch + " since this page was built."));
+    });
+    if (items.length) {
+      var list = el("ul", "vt-risk-drawer__errors");
+      items.forEach(function (text) { list.appendChild(el("li", null, text)); });
+      box.appendChild(list);
+    }
+    var deleted = (notice.conflicts || []).filter(function (c) { return c.reason === "deleted"; }).length;
+    if (deleted && this.missing().length === Object.keys(this.files).length) {
+      box.appendChild(el("p", null, "None of the risks on this page exist on " + this.branch +
+        ". The page was built from another branch; set GITHUB_BRANCH for this environment."));
+    }
+    if (notice.status) box.appendChild(el("p", "vt-risk-commit__note", "HTTP " + notice.status));
+    return box;
   };
 
   function defaultMessage(pending) {
@@ -697,8 +748,16 @@
       });
       this.save();
     }
-    if (response.status === 401) payload.error = "Your session expired. Reload the page to sign in again.";
-    return { ok: false, error: payload.error || "Commit failed (" + response.status + ").", problems: payload.problems };
+    if (response.status === 401 || response.redirected) {
+      payload.error = "Your session expired. Reload the page to sign in again.";
+    }
+    return {
+      ok: false,
+      status: response.status,
+      error: payload.error || "The server answered " + response.status + ".",
+      problems: payload.problems,
+      conflicts: payload.conflicts
+    };
   };
 
   // -- start -------------------------------------------------------------------
@@ -709,23 +768,37 @@
     if (root.dataset.vtEditorReady) return;
     root.dataset.vtEditorReady = "1";
     var api = root.dataset.editorApi;
+    var me;
     try {
-      var me = await getJson(api + "/me");
-      if (!me.canEdit) return;
+      me = await getJson(api + "/me");
+    } catch (error) {
+      // Signed out, no API (mkdocs serve) or editing not set up: show the plain register.
+      if (window.console) console.warn("Risk editor unavailable:", error);
+      return;
+    }
+    if (!me.canEdit) return;
+
+    var toolbar = el("div", "vt-risk-edit-toolbar");
+    var who = el("span", "vt-risk-edit-toolbar__who", "Editing as @" + me.login + " on " + (me.branch || "main"));
+    toolbar.appendChild(who);
+    root.insertBefore(toolbar, root.firstChild);
+    try {
       var loaded = await Promise.all([
         getJson(new URL(root.dataset.editorSource, window.location.href).href),
         getJson(api + "/state")
       ]);
       var editor = new Editor(root, api, loaded[0], me, loaded[1]);
       current = editor;
-
-      var toolbar = el("div", "vt-risk-edit-toolbar");
-      toolbar.appendChild(button("New risk", "", function () { editor.open(null); }));
-      toolbar.appendChild(el("span", "vt-risk-edit-toolbar__who", "Editing as @" + me.login));
-      root.insertBefore(toolbar, root.firstChild);
+      toolbar.insertBefore(button("New risk", "", function () { editor.open(null); }), who);
+      var missing = editor.missing().length;
+      if (missing) {
+        toolbar.appendChild(el("span", "vt-risk-edit-toolbar__error", missing === Object.keys(editor.files).length
+          ? "None of these risks exist on " + editor.branch + ", where edits are committed. Set GITHUB_BRANCH for this environment."
+          : missing + " risk" + (missing === 1 ? " is" : "s are") + " not on " + editor.branch + " any more; reload after the deploy."));
+      }
       editor.mark();
     } catch (error) {
-      if (window.console) console.warn("Risk editor unavailable:", error);
+      toolbar.appendChild(el("span", "vt-risk-edit-toolbar__error", "The editor could not load: " + error.message));
     }
   }
 
